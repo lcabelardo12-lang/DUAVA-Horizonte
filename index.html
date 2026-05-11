@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Duava Horizonte</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16213e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" type="image/png" href="logo.png">
+<link rel="apple-touch-icon" href="logo.png">
+
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+}
+
+.container {
+    width: 92% !important;
+    max-width: 400px;
+    margin: 10px auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+@keyframes heartbeat {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+body{
+    font-family: Arial, sans-serif;
+    background:#1a1a2e;
+    color:#fff;
+    text-align:center;
+    margin: 0;
+    padding: 10px;
+}
+
+.container{
+    max-width:400px;
+    margin:auto;
+    background:#16213e;
+    padding:20px;
+    border-radius:15px;
+    margin-top:20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+input, button{
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 8px;
+    box-sizing: border-box;
+}
+
+button{
+    background:#00ff99;
+    color:#000;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.section{
+    margin-top:20px;
+    padding:15px;
+    background:#0f3460;
+    border-radius:10px;
+}
+
+.titulo {
+    font-family: 'Georgia', serif;   
+    font-size: 2.2em;                
+    text-transform: uppercase;       
+    font-weight: bold;
+}
+
+.ubicacion { font-size: 1em; color: #00ff99; margin-bottom: 20px; }
+
+.ganancia-box {
+    background: linear-gradient(135deg, #16213e, #0f3460);
+    border: 1px solid #00ff99;
+    padding: 15px;
+    border-radius: 12px;
+    margin-top: 15px;
+}
+
+.rocket-icon { font-size: 2em; display: block; }
+
+.gift-icon { 
+    font-size: 1.8em; 
+    display: inline-block; 
+    animation: heartbeat 1.5s infinite; 
+    margin-right: 10px;
+}
+
+.monto-estimado { font-size: 1.5em; font-weight: bold; color: #00ff99; }
+
+.extra-acumulado { 
+    margin-top: 15px; 
+    padding: 10px; 
+    border-top: 1px dashed #555;
+}
+
+.subtitulo {
+    font-size: 0.9em;
+    color: #00ff99;
+    margin-top: -10px;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+    position: relative;
+}
+
+.subtitulo::after {
+    content: "";
+    display: block;
+    width: 60%;
+    height: 1px;
+    background: #00d1ff;
+    margin: 6px auto 0;
+    opacity: 0.6;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div class="container" id="login">
+  <h1 class="titulo">DUAVA HORIZONTE</h1>
+  <p class="subtitulo">Fondo de inversi&oacute;n inteligente</p>
+  <p class="ubicacion">Bolivia <span style="color:#fff">&#9679;</span> Cuba</p>
+  <input type="password" id="pass" placeholder="CLAVE">
+  <button onclick="login()">ENTRAR</button>
+</div>
+
+<!-- PANEL ADMIN -->
+<div class="container" id="admin" style="display:none">
+  <h2>Panel Control</h2>
+  <div class="section">
+    <p>Capital Actual: <b>Bs. <span id="capAdmin">0</span></b></p>
+    <input type="number" id="capitalInput" placeholder="A&ntilde;adir nuevo capital">
+    <input type="text" id="notaCapital" placeholder="Nota de la entrada" style="width:100%; margin-top:5px; padding:10px; border-radius:5px; border:1px solid #ccc;">
+    <button onclick="guardar()">Sumar al Capital</button>
+  </div>
+  <div class="section">
+    <h3>Inter&eacute;s Fijo (<span id="nombreMesAdmin"></span>)</h3>
+    <input type="number" id="baseInput" placeholder="% Fijo" oninput="data.basePorcentaje=parseFloat(this.value)||data.basePorcentaje; mostrar();" onchange="guardarPorcentaje()">
+    <button id="btnFijo" onclick="aplicarFijo()">Aplicar Fijo del Mes</button>
+    <small id="avisoFijo" style="color:#ffb3b3; display:none;">¡Ya aplicado este mes!</small>
+  </div>
+  <div class="section">
+    <h3>Extra por Ventas</h3>
+    <input type="number" id="extraInput" placeholder="% Extra">
+    <button onclick="confirmarExtra()" style="background:#00d1ff;">Aplicar Extra</button>
+  </div>
+  <div class="section">
+    <button onclick="enviarWhatsApp()">Enviar Reporte por WhatsApp</button>
+    <button onclick="abrirExtraccion()" style="background:#ff4d4d; color:white;">Extraer Dinero</button>
+    <button onclick="resetPrueba()" style="background:#555; font-size:0.7em;">Reset Bloqueo Mes</button>
+    <div id="historialAdmin" style="margin-top:20px; background:#f4f4f4; padding:15px; border-radius:10px; color:#333; border:1px solid #ddd; margin-bottom:15px;">
+      <h3 style="text-align:center; margin-top:0;"> Registro de Operaciones</h3>
+      <div id="listaHistorialAdmin" style="max-height:300px; overflow-y:auto;"></div>
+    </div>
+    <button onclick="logout()" style="background:#444; color:white;">Cerrar sesi&oacute;n</button>
+  </div>
+</div>
+
+<!-- PANEL EXTRACCIÓN -->
+<div class="container" id="extraccion" style="display:none">
+  <h2>Retirar Dinero</h2>
+  <div class="section">
+    <input type="number" id="montoExtraer" placeholder="Monto a retirar">
+    <input type="text" id="notaExtraer" placeholder="Nota del retiro" style="width:100%; margin-top:5px; padding:10px; border-radius:5px; border:1px solid #ccc;">
+    <button onclick="extraer()">Confirmar Retiro</button>
+    <button onclick="cerrarExtraccion()" style="background:#555; color:white;">Volver</button>
+  </div>
+</div>
+
+<!-- PANEL INVERSIONISTA -->
+<div class="container" id="user" style="display:none">
+  <h1 class="titulo" style="font-size:1.5em">DUAVA HORIZONTE</h1>
+  <p class="ubicacion">Inversionista: <b id="nomInv">Tania</b></p>
+
+  <div class="section">
+    <p>Fecha: <span id="fechaHoy"></span></p>
+    <p>Capital Total: <br><span id="cap2" style="font-size:1.6em; font-weight:bold; color:#00ff99;">0</span> Bs.</p>
+  </div>
+
+  <div class="ganancia-box">
+    <span class="rocket-icon"></span>
+    <small>ESTIMADO <span id="nombreMesTania"></span> (FIJO):</small><br>
+    <span class="monto-estimado">Bs. <span id="gananciaTania">0.00</span></span>
+  </div>
+
+  <div class="ganancia-box" style="background: #00d1ff22; border: 1px solid #00d1ff;">
+    <span class="rocket-icon"></span>
+    <small>EXTRAS ACUMULADOS <span id="nombreMesExtra"></span>:</small><br>
+    <span class="monto-estimado" style="color: #00d1ff;">Bs. <span id="montoExtraTania">0.00</span></span>
+  </div>
+
+  <div id="historialTania" style="margin-top:20px; background:white; padding:15px; border-radius:10px; color:#333;">
+    <h3 style="text-align:center; color:#2c3e50; margin-top:0;"> Historial de Movimientos</h3>
+    <div id="listaHistorialTania" style="font-size:0.9em; max-height:300px; overflow-y:auto;"></div>
+  </div>
+
+  <div class="section">
+    <button onclick="enviarWhatsApp()" class="whatsapp-btn">Enviar por WhatsApp</button>
+    <button onclick="logout()" style="background:#555; color:white;">Cerrar sesi&oacute;n</button>
+  </div>
+</div>
+
+<script>
+//  PEGA AQUÍ LA URL DE TU WEB APP DE GOOGLE
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxe69RIb8juJ-ksl_9NiVh8FuRnPidfy9BlgPMf7uEzr6-4phY6r-Q4B2E7KbyM960nCQ/exec";
+
+let data = {
+    capital: 0,
+    basePorcentaje: 5,
+    extraAcumulado: 0,
+    mesUltimoFijo: "",
+    ultimaGananciaFija: 0,
+    nombreInversionista: "Tania",
+    historial: [],
+    cargado: false
+};
+
+function login() {
+  var campo = document.getElementById("pass");
+  var p = campo.value;
+  
+  if (p === "7512" || p === "TA25") {
+    document.getElementById("login").style.display = "none";
+    if (p === "7512") {
+      document.getElementById("admin").style.display = "block";
+    } else {
+      document.getElementById("user").style.display = "block";
+    }
+    actualizarTodo();
+  } else {
+    alert("Clave incorrecta");
+    campo.value = "";
+  }
+}
+
+function obtenerNombreMes() {
+    const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    return meses[new Date().getMonth()];
+}
+
+function mostrar(){
+    if(!document.getElementById("capAdmin")) return;
+
+    document.getElementById("capAdmin").innerText = data.capital.toFixed(2);
+    document.getElementById("cap2").innerText = data.capital.toFixed(2);
+
+    if(document.getElementById("baseInput")) {
+        if(document.activeElement !== document.getElementById("baseInput")) {
+            document.getElementById("baseInput").value = data.basePorcentaje;
+        }
+    }
+
+    let mesActual = obtenerNombreMes();
+    let meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    let indexActual = meses.indexOf(mesActual);
+    let siguienteMes = meses[(indexActual + 1) % 12];
+
+    let nombreParaMostrar = (data.mesUltimoFijo === mesActual) ? siguienteMes : mesActual;
+  
+    let porcentaje = data.basePorcentaje;
+    let montoFijo = data.capital * (porcentaje / 100);
+
+    if(document.getElementById("gananciaTania")) {
+        document.getElementById("gananciaTania").innerText = montoFijo.toFixed(2);
+    }
+    if(document.getElementById("nombreMesTania")) document.getElementById("nombreMesTania").innerText = nombreParaMostrar;
+    if(document.getElementById("nombreMesExtra")) document.getElementById("nombreMesExtra").innerText = nombreParaMostrar;
+    if(document.getElementById("montoExtraTania")) {
+        document.getElementById("montoExtraTania").innerText = (data.extraAcumulado || 0).toFixed(2);
+    }
+    
+    document.getElementById("fechaHoy").innerText = new Date().toLocaleDateString();
+}
+
+function actualizarTodo() {
+    fetch(SCRIPT_URL + "?action=obtenerDatos")
+    .then(r => r.json())
+    .then(res => {
+        if (res && !res.error) {
+            data.capital = res.capital || 0;
+            data.extraAcumulado = res.extraAcumulado || 0;
+            data.mesUltimoFijo = res.mesUltimoFijo || "";
+            data.basePorcentaje = res.basePorcentaje || 5;
+            data.cargado = true;
+            mostrar();
+        }
+    })
+    .catch(() => {
+        data.cargado = true;
+        mostrar();
+    });
+
+    fetch(SCRIPT_URL + "?action=obtenerHistorial")
+    .then(r => r.json())
+    .then(resHistorial => {
+        if (resHistorial && Array.isArray(resHistorial)) {
+            data.historial = resHistorial;
+            actualizarVistaHistorial();
+        }
+    })
+    .catch(() => {});
+}
+
+function extraer() {
+    var inputMonto = document.getElementById("montoExtraer");
+    var inputNota = document.getElementById("notaExtraer");
+    
+    var monto = parseFloat(inputMonto.value);
+    var nota = inputNota.value;
+
+    if (monto > 0 && monto <= data.capital) {
+        data.capital -= monto;
+        registrarMovimiento("Salida", monto, nota || "Retiro de efectivo");
+        inputMonto.value = "";
+        inputNota.value = "";
+        mostrar(); 
+        actualizarVistaHistorial();
+        save("Retiro realizado correctamente. Saldo actual: Bs. " + data.capital.toFixed(2));
+        cerrarExtraccion();
+    } else { 
+        alert("Error: Monto no válido o saldo insuficiente. Tienes: Bs. " + data.capital.toFixed(2)); 
+    }
+}
+
+function save(mensaje) {
+    data.basePorcentaje = parseFloat(document.getElementById("baseInput").value) || data.basePorcentaje;
+
+    fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({
+            capital: data.capital,
+            extraAcumulado: data.extraAcumulado,
+            mesUltimoFijo: data.mesUltimoFijo,
+            basePorcentaje: data.basePorcentaje,
+            historial: (data.historial && data.historial.length > 0) ? data.historial : null
+        })
+    })
+    .then(r => r.json())
+    .then(() => {
+        if(mensaje) alert(mensaje);
+        actualizarTodo();
+    })
+    .catch(() => {
+        if(mensaje) alert(mensaje);
+    });
+}
+
+function logout() {
+    document.getElementById("admin").style.display = "none";
+    document.getElementById("user").style.display = "none";
+    document.getElementById("extraccion").style.display = "none";
+    document.getElementById("pass").value = "";
+    document.getElementById("login").style.display = "block";
+}
+
+function abrirExtraccion(){ 
+    document.getElementById("admin").style.display="none"; 
+    document.getElementById("extraccion").style.display="block"; 
+}
+
+function cerrarExtraccion(){ 
+    document.getElementById("extraccion").style.display="none"; 
+    document.getElementById("admin").style.display="block"; 
+}
+
+function guardar(){
+    let monto = parseFloat(document.getElementById("capitalInput").value);
+    let nota = document.getElementById("notaCapital").value;
+    if(monto > 0) { 
+        data.capital += monto; 
+        registrarMovimiento("Entrada", monto, nota);
+        document.getElementById("capitalInput").value = ""; 
+        document.getElementById("notaCapital").value = ""; 
+        actualizarVistaHistorial();
+        mostrar(); 
+        save();
+    }
+}
+
+function registrarMovimiento(tipo, monto, nota) {
+    let ahora = new Date();
+    let fecha = ahora.toLocaleDateString() + " " + ahora.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    
+    let movimiento = {
+        fecha: fecha,
+        tipo: tipo,
+        monto: monto,
+        nota: nota || ""
+    };
+    data.historial.push(movimiento);
+}
+
+function actualizarVistaHistorial() {
+    let html = "";
+    if (!data.historial || data.historial.length === 0) {
+        html = "<p>No hay movimientos.</p>";
+    } else {
+        [...data.historial].reverse().forEach(mov => {
+            // Seleccionar código de escape de emoji según el tipo
+            let emoji = "\u{1F4DD}"; // 
+            let color = "#333";
+            
+            if (mov.tipo === "Entrada") {
+                emoji = "\u{1F4B0}"; // 
+                color = "#2e7d32"; // verde
+            } else if (mov.tipo === "Salida") {
+                emoji = "\u{1F4B8}"; // 
+                color = "#c62828"; // rojo
+            } else if (mov.tipo.startsWith("CIERRE MES")) {
+                emoji = "\u{1F4C5}"; // 
+                color = "#1565c0"; // azul
+            } else if (mov.tipo === "Extra Ventas") {
+                emoji = "\u{2728}";   // 
+                color = "#6a1b9a"; // morado
+            }
+            
+            // Icono de calendario para la fecha: \u{1F4C5}
+            html += `<div style="border-bottom:1px solid #eee; padding:8px;">
+                <b style="color:${color};">${emoji} ${mov.tipo}:</b> Bs. ${parseFloat(mov.monto).toFixed(2)}<br>
+                <small>\u{1F4C5} ${mov.fecha}</small><br>
+                <small>${mov.nota || ""}</small>
+            </div>`;
+        });
+    }
+    
+    // Inserción segura en los contenedores
+    const listaTania = document.getElementById("listaHistorialTania");
+    const listaAdmin = document.getElementById("listaHistorialAdmin");
+    
+    if(listaTania) listaTania.innerHTML = html;
+    if(listaAdmin) listaAdmin.innerHTML = html;
+}
+
+
+
+function confirmarExtra() {
+    let inputExtra = document.getElementById("extraInput");
+    let porcentaje = parseFloat(inputExtra.value);
+    
+    if (porcentaje > 0) {
+        let montoExtra = data.capital * (porcentaje / 100);
+        data.extraAcumulado = (data.extraAcumulado || 0) + montoExtra;
+        registrarMovimiento("Extra Ventas", montoExtra, "Porcentaje: " + porcentaje + "%");
+        actualizarVistaHistorial();
+        inputExtra.value = ""; 
+        mostrar();
+        save("Extra aplicado correctamente");
+    } else {
+        alert("Por favor, introduce un número válido.");
+    }
+}
+
+function aplicarFijo() {
+    data.basePorcentaje = parseFloat(document.getElementById("baseInput").value) || data.basePorcentaje;
+    let mesActual = obtenerNombreMes();
+    
+    if (data.mesUltimoFijo === mesActual) {
+        alert("Ya realizaste el cierre de " + mesActual);
+        return;
+    }
+
+    let montoFijo = data.capital * (data.basePorcentaje / 100);
+    let sumaCierre = montoFijo + (data.extraAcumulado || 0);
+    
+    data.capital += sumaCierre;
+    data.mesUltimoFijo = mesActual;
+    data.extraAcumulado = 0;
+    
+    registrarMovimiento("CIERRE MES (" + mesActual + ")", sumaCierre, "Fijo + Extras acumulados");
+    actualizarVistaHistorial();
+    mostrar(); 
+    save("Cierre de mes completado y capitalizado.");
+}
+
+function resetPrueba() {
+    if(confirm("¿Quieres desbloquear el mes para volver a probar el cierre?")) {
+        data.mesUltimoFijo = "";
+        mostrar();
+        save("Bloqueo de mes eliminado para pruebas.");
+    }
+}
+
+function guardarPorcentaje() {
+    if (!data.cargado) return;
+    
+    fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({
+            capital: data.capital,
+            extraAcumulado: data.extraAcumulado,
+            mesUltimoFijo: data.mesUltimoFijo,
+            basePorcentaje: data.basePorcentaje,
+            historial: null
+        })
+    });
+}
+
+function enviarWhatsApp() {
+  const NUM_TANIA = "59175367707";
+  const NUM_YO = "59175203816";
+  
+  let esAdmin = document.getElementById("admin").style.display === "block";
+  let numero = esAdmin ? NUM_YO : NUM_TANIA;
+  
+  let mes = obtenerNombreMes();
+  let fecha = new Date().toLocaleDateString();
+  let capital = data.capital.toFixed(2);
+  let fijo = (data.capital * (data.basePorcentaje / 100)).toFixed(2);
+  let extra = (data.extraAcumulado || 0).toFixed(2);
+  let estadoCierre = (data.mesUltimoFijo === mes) ? "CERRADO" : "PENDIENTE";
+  
+  let capitalSeguro = capital.replace(".", ",");
+  let fijoSeguro = fijo.replace(".", ",");
+  let extraSeguro = extra.replace(".", ",");
+  let totalSeguro = (parseFloat(fijo) + parseFloat(extra)).toFixed(2).replace(".", ",");
+  
+  // Emojis como códigos Unicode para mayor compatibilidad
+  let mensaje = "\u{1F3E2} *DUAVA HORIZONTE*\n" +
+                "\u{1F4CA} *REPORTE DE INVERSION*\n\n" +
+                "\u{1F4C5} Fecha: " + fecha + "\n" +
+                "\u{1F4C6} Mes: " + mes + "\n" +
+                "\u{1F4CC} Estado: " + estadoCierre + "\n" +
+                "----------------\n" +
+                "\u{1F4B0} Capital Total: Bs. " + capitalSeguro + "\n" +
+                "\u{1F680} Ganancia Fija (" + data.basePorcentaje + "%): Bs. " + fijoSeguro + "\n" +
+                "\u{1F381} Extras Acumulados: Bs. " + extraSeguro + "\n" +
+                "----------------\n" +
+                "\u{1F4C8} TOTAL ESTIMADO (Fijo + Extra): Bs. " + totalSeguro;
+              
+  let url = "https://wa.me/" + numero + "?text=" + encodeURIComponent(mensaje);
+  window.open(url, '_blank');
+}
+
+
+</script>
+
+</body>
+</html>
