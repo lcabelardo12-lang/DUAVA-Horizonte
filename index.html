@@ -325,12 +325,12 @@ function mostrar(){
 }
 
 function actualizarTodo() {
-    //  NUEVO: Siempre mostrar los datos locales primero
     mostrar();
     actualizarVistaHistorial();
 
-    // Luego intentar traer datos remotos (si el script funciona)
-    fetch(SCRIPT_URL + "?action=obtenerDatos")
+    fetch(SCRIPT_URL + "?action=obtenerDatos", {
+        redirect: "follow"
+    })
     .then(r => r.json())
     .then(res => {
         if (res && !res.error) {
@@ -339,27 +339,32 @@ function actualizarTodo() {
             data.mesUltimoFijo = res.mesUltimoFijo || "";
             data.basePorcentaje = res.basePorcentaje || 5;
             data.cargado = true;
-            guardarLocal(); //  NUEVO: sincronizar local con remoto
+            guardarLocal();
             mostrar();
         }
     })
-    .catch(() => {
-        //  NUEVO: si falla el remoto, los datos locales ya están cargados
+    .catch(e => {
+        console.error("Error al leer datos:", e);
         data.cargado = true;
         mostrar();
     });
 
-    fetch(SCRIPT_URL + "?action=obtenerHistorial")
+    fetch(SCRIPT_URL + "?action=obtenerHistorial", {
+        redirect: "follow"
+    })
     .then(r => r.json())
     .then(resHistorial => {
         if (resHistorial && Array.isArray(resHistorial)) {
             data.historial = resHistorial;
-            guardarLocal(); //  NUEVO
+            guardarLocal();
             actualizarVistaHistorial();
         }
     })
-    .catch(() => {});
+    .catch(e => {
+        console.error("Error al leer historial:", e);
+    });
 }
+
 
 function extraer() {
     var inputMonto = document.getElementById("montoExtraer");
@@ -385,30 +390,33 @@ function extraer() {
 
 function save(mensaje) {
     data.basePorcentaje = parseFloat(document.getElementById("baseInput").value) || data.basePorcentaje;
-
-    //  NUEVO: siempre guardar local primero
     guardarLocal();
 
     fetch(SCRIPT_URL, {
         method: "POST",
+        headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+        },
         body: JSON.stringify({
             capital: data.capital,
             extraAcumulado: data.extraAcumulado,
             mesUltimoFijo: data.mesUltimoFijo,
             basePorcentaje: data.basePorcentaje,
             historial: (data.historial && data.historial.length > 0) ? data.historial : null
-        })
+        }),
+        redirect: "follow"
     })
     .then(r => r.json())
     .then(() => {
         if(mensaje) alert(mensaje);
         actualizarTodo();
     })
-    .catch(() => {
-        //  NUEVO: si falla el remoto, al menos avisar que quedó guardado local
+    .catch(e => {
+        console.error("Error al guardar:", e);
         if(mensaje) alert(mensaje + "\n(Guardado localmente)");
     });
 }
+
 
 function logout() {
     document.getElementById("admin").style.display = "none";
@@ -549,19 +557,24 @@ function guardarPorcentaje() {
     if (!data.cargado) return;
 
     data.basePorcentaje = parseFloat(document.getElementById("baseInput").value) || data.basePorcentaje;
-    guardarLocal(); //  NUEVO: guardar local INMEDIATAMENTE al cambiar el %
+    guardarLocal();
 
     fetch(SCRIPT_URL, {
         method: "POST",
+        headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+        },
         body: JSON.stringify({
             capital: data.capital,
             extraAcumulado: data.extraAcumulado,
             mesUltimoFijo: data.mesUltimoFijo,
             basePorcentaje: data.basePorcentaje,
             historial: null
-        })
-    });
+        }),
+        redirect: "follow"
+    }).catch(e => console.error("Error al guardar porcentaje:", e));
 }
+
 
 function enviarWhatsApp() {
   const NUM_TANIA = "59175367707";
